@@ -1,106 +1,179 @@
-
-
+---
+title: "Analytics_III_Problem_I"
+author: "Shubham Shinde"
+date: "`r Sys.Date()`"
+output:
+  html_document: default
+  pdf_document: default
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(fig.width=10, fig.height=7) # Fixed the margin
 library(ggplot2)
 library(dplyr)
 library(tidyverse)
 library(rpart)
 library(MASS)
 library(klaR)
-# 1. Data Import
+```
+
+# Table of Contents
+1. [Outline](#outline)
+2. [Miles Per Gallon Analysis ](#mpg)
+3. [1. Data Import](#imp)
+4. [2. Data Cleaning](#cleaning)
+5. [3. Descriptive Data Analysis](#desc)
+6. [4.  Plots](#plots)
+7. [5. Model](#models)
+
+
+# Outline
+- Decide, if you want to use Markdown or Sweave/knit.
+- Analyze the mpg data set [link](https://archive.ics.uci.edu/ml/datasets/auto+mpg) with one statistical method of your choice.
+- Prepare a reproduce-able document of your analysis with Markdown or Sweave/knit.
+- Alternative: choose another data set.
+
+# Miles Per Gallon Analysis 
+
+## 1. Data Import
+```{r dataimport, }
 data <- read.csv("C:/Users/shubh/OneDrive - SRH IT/University/Semester 3/Analytics 3/Codes/auto-mpg.data",na = "?")
 head(data)
+```
 
 
-# 2. Data Cleaning
+
+## 2. Data Cleaning
+```{r datacleaning, }
 data$horsepower <- gsub("?",NA,data$horsepower, fixed = TRUE)
-
+s <- colnames(data)
 data <-  data %>%
   drop_na()
+```
 
+```{r datatrans, }
 data$mpg <- as.numeric(data$mpg)
 data$horsepower <- as.numeric(data$horsepower)
 # data$cylinders <- as.factor(data$cylinders)
 data$car.name <- as.factor(data$car.name)
 # data$model.year <- as.factor(data$model.year)
-summary(data)
+```
 
 
+
+```{r datatrans1, }
 data <- data %>% 
   mutate(origin_alpha = as.factor(case_when(
     origin == 1 ~ "American",
     origin == 2 ~ "European",
     origin == 3 ~ "Japanese",
     )))
-# 3. Descriptive Data Analysis
+```
+## 3. Descriptive Data Analysis
 
-## a. Summary
+The summary of the dataset is as follows:
+```{r datasumm, }
 summary(data)
-
-## b. head()
+```
+We can check some data examples:
+```{r datahead, }
 head(data)
-
-## c. structure
+```
+Lets check the structure of the data:
+```{r datastr, }
 str(data)
+```
 
-## d. Plots
+
+## 4.  Plots
+
 
 ### MPG Vs CYL
 
-ggplot(data = data, aes(cylinders, mpg)) + geom_jitter(aes(color = cylinders))
-# Higher cyl has lower mpg
+
+```{r mpgvscyl}
+ggplot(data = data, aes(cylinders, mpg)) + geom_boxplot(aes(color = cylinders))
+```
+Higher cyl has lower mpg
 
 ### MPG Vs displacement
+```{r mpgvsdisp}
 ggplot(data = data, aes(displacement, mpg)) + geom_jitter()
-# Higher Displacement lower mpg
+```
+Higher Displacement lower mpg
 
 ### MPG Vs horsepower
+```{r mpgvshor}
 ggplot(data = data, aes(horsepower, mpg)) + geom_jitter()
-# Higher Horsepower lower mpg
-
+```
+Higher Horsepower lower mpg
 
 ### MPG vs weight
+```{r mpgvswe}
 ggplot(data = data, aes(weight, mpg)) + geom_jitter()
-# Higher Weight lower mpg
+```
+Higher Weight lower mpg
 
 ### MPG vs acceleration
+
+```{r mpgvsacc}
 ggplot(data = data, aes(acceleration, mpg)) + geom_point()
-# MPG increases with acceleration
-# Average Acceleration has better mpg
+```
+MPG increases with acceleration
+Average Acceleration has better mpg
 
 ### MPG vs Model Year
+```{r mpgvsmod}
 ggplot(data = data, aes(x = model.year, y = mpg)) + geom_boxplot()
-## Recent cars are more efficient, have better mpg.
+```
+Recent cars are more efficient, have better mpg.
 
-# Correlation Matrix - Filter Factorial/Char Columns from Dataframe
+
+## Correlation Matrix - Filter Factorial/Char Columns from Dataframe
+```{r corfilter}
 exclude_vec <- c("model.year", "car.name","cylinders")
 cor_data <- data %>% 
-  select(setdiff(s, exclude_vec))
+  dplyr::select(setdiff(s, exclude_vec))
+```
 
-# Correlation Matrix
+## Correlation Matrix
+```{r cor}
 cor(cor_data)
+```
 
-unique(data$origin)
-# Model
-# Independent Variables 
-# 1. Prediction of mpg
 
+
+## 5. Model
+### Independent Variables 
+### 1. Prediction of mpg
+
+```{r datafil}
 data_cart <- data %>%
   dplyr::select(-car.name, -origin_alpha)
+```
+
 
 ## Decision Tree
+```{r datafil1}
 cart <- rpart(mpg ~ ., data = data_cart)
 cart$variable.importance
-
+```
 ## Pruning
+```{r datafil2}
+
 cart.p <- prune(cart, cp = .05)
 cart.p$variable.importance
+```
 
+```{r datafil3}
 
 test_data <- data.frame(weight = c(1600),model.year = c(06), acceleration = c(56),horsepower = c(100), origin = c(2), cylinders = c(4), displacement = c(134))
 test_data
+```
+```{r datafil4}
 
 predict(cart, newdata = test_data)
-
+```
 
 ## Linear Regression
 
@@ -108,50 +181,63 @@ predict(cart, newdata = test_data)
 # Null Hypothesis: There is no relationship between independent variables and mpg
 # '''
 
+```{r datafil5}
 lin.reg <- lm(mpg ~ . - origin_alpha, data = data)
 summary(lin.reg)
-
+```
+```{r datafil6}
 lin.reg <- lm(mpg ~ cylinders + horsepower + weight + origin, data = data)
 summary(lin.reg)
-
-
+```
+```{r datafil7}
 test_data <- data.frame(weight = c(1600),model.year = c(06), acceleration = c(56),horsepower = c(100), origin = c(2), cylinders = c(4), displacement = c(134))
 test_data
-
+```
+```{r datafil8}
 predict(lin.reg, newdata = test_data)
-
+```
 ## Classification Problem
 ## What is the origin of a car
 
 
 ## Linear Discriminant Analysis
-
+```{r datafil9}
 data_lda <- data %>%
   dplyr::select(-origin, -car.name)
-
+```
+```{r datafil10}
 lda.model <- lda(origin_alpha ~ .,data = data_lda)
+```
+```{r datafil11}
 summary(lda.model)
+```
+```{r datafil12}
 lda.model
-
+```
+```{r datafil13}
 test_data <- data.frame(mpg = c(45),weight = c(1600),model.year = c(06), acceleration = c(56),horsepower = c(100), origin = c(2), cylinders = c(4), displacement = c(134))
+```
+```{r datafil14}
 test_data
-
+```
+```{r datafil15}
 predict(lda.model, newdata = test_data)
-
+```
 
 ## Greedy Wilks
-
+```{r datafil16}
 fit.gw <- greedy.wilks(origin_alpha ~ . , data = data_lda)
 fit.gw
-
-
+```
+```{r datafil17}
 lda_gw <- lda(fit.gw$formula, data = data_lda)
 lda_gw
-
+```
+```{r datafil18}
 test_data <- data.frame(mpg = c(45), weight = c(1600),model.year = c(06), acceleration = c(56),horsepower = c(100), origin = c(2), cylinders = c(4), displacement = c(134))
 test_data
-
-ps <- predict(lda.model, newdata = test_data)
-
-
-# f <- table(Observed = data_lda$origin_alpha, Predicted = ps$class)
+```
+```{r datafil19}
+p <- predict(lda.model, newdata = test_data)
+p
+```
